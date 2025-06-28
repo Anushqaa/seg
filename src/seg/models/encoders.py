@@ -1,5 +1,3 @@
-# src/seg/models/encoders.py - COMPLETE CORRECTED VERSION
-
 import tensorflow as tf
 from tensorflow.keras import Model, Sequential
 from tensorflow.keras import layers, applications
@@ -21,7 +19,7 @@ class EncoderRegistry:
         if name not in cls._encoders:
             available = list(cls._encoders.keys())
             raise ValueError(f"Unknown encoder '{name}'. Available: {available}")
-        return cls._encoders[name][0]  # Return builder function
+        return cls._encoders[name][0]
     
     @classmethod
     def get_feature_layers(cls, name: str) -> List[str]:
@@ -38,13 +36,9 @@ def _create_backbone(
     feature_layers: List[str],
     input_shape: Tuple[int, int, int]
 ) -> Model:
-    """### FIXED: Returns a Model that outputs List[Tensor] consistently"""
-    # Auto-detect layers if not specified
     if not feature_layers:
-        # Find all convolutional outputs
         feature_layers = [layer.name for layer in backbone.layers 
                           if isinstance(layer, layers.Conv2D) and 'pool' not in layer.name]
-        # Take the last 5 conv layers or whatever available
         feature_layers = feature_layers[-5:] if len(feature_layers) >= 5 else feature_layers
         warnings.warn(f"Using auto-detected feature layers: {feature_layers}")
     
@@ -56,12 +50,10 @@ def _create_backbone(
         except ValueError:
             warnings.warn(f"Layer '{layer_name}' not found in backbone")
     
-    # Fallback to final layer if no features found
     if not feature_outputs:
         feature_outputs = [backbone.output]
         warnings.warn("No valid feature layers found. Using final output layer")
     
-    # ### FIXED: Create wrapper that ensures call() always returns List[Tensor]
     feature_model = Model(inputs=backbone.input, outputs=feature_outputs, name=f"{backbone.name}_features")
     
     class FeatureExtractor(Model):
@@ -71,14 +63,13 @@ def _create_backbone(
             
         def call(self, inputs, training=None):
             outputs = self.base_model(inputs, training=training)
-            # Ensure output is always a list
             if not isinstance(outputs, list):
                 outputs = [outputs]
             return outputs
     
     return FeatureExtractor(feature_model)
 
-# ============== Encoder Implementations ============== #
+
 
 @EncoderRegistry.register("resnet50", [
     "conv1_relu", "conv2_block3_out", "conv3_block4_out", 
@@ -263,10 +254,9 @@ def build_custom_encoder(
         **kwargs
     )
 
-# ============== Custom Encoder Class ============== #
+
 
 class CustomEncoder(Model):
-    """### FIXED: Returns List[Tensor] consistently like other encoders"""
     def __init__(
         self,
         input_shape: Tuple[int, int, int],
@@ -307,7 +297,7 @@ class CustomEncoder(Model):
             
         return features
 
-# ============== Public API Functions ============== #
+
 
 def get_encoder(
     name: str,
@@ -391,7 +381,6 @@ def get_encoder_info(name: str) -> Dict[str, Any]:
         available = list(encoder_info.keys())
         raise ValueError(f"Unknown encoder '{name}'. Available: {available}")
     
-    # Add feature layers to info
     info = encoder_info[name]
     try:
         info["feature_layers"] = EncoderRegistry.get_feature_layers(name)

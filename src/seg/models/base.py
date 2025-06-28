@@ -1,5 +1,3 @@
-# src/seg/models/base.py - COMPLETE CORRECTED VERSION
-
 import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras import layers
@@ -25,7 +23,6 @@ class BaseModel(Model):
         super().__init__(**kwargs)
         self._validate_input(encoder_name, decoder_name, num_classes, input_shape, activation)
         
-        # Initialize parameters
         self.encoder_name = encoder_name
         self.decoder_name = decoder_name
         self.num_classes = num_classes
@@ -35,11 +32,10 @@ class BaseModel(Model):
         self.decoder_config = decoder_config or {}
         self.activation_name = activation
         self._is_compiled = False
-        self._decoder_built = False  # ### FIXED: Track decoder building state
+        self._decoder_built = False
 
-        # Build model components
         self._build_encoder()
-        # ### FIXED: Don't build decoder yet - wait for first call
+
         self._build_output_layer()
 
     def _validate_input(
@@ -50,13 +46,12 @@ class BaseModel(Model):
             input_shape: Tuple[int, int, int], 
             activation: str
         ) -> None:
-        # Validate activation/class mismatch
+        
         if num_classes == 1 and activation == "softmax":
             raise ValueError("Use 'sigmoid' not 'softmax' for binary segmentation")
         elif num_classes > 1 and activation == "sigmoid":
             raise ValueError("Use 'softmax' not 'sigmoid' for multi-class segmentation")
             
-        # Validate decoder compatibility
         if decoder_name == "deeplabv3plus" and not encoder_name.startswith(("resnet", "vgg", "densenet")):
             warnings.warn(f"DeepLabV3+ may not work optimally with {encoder_name} encoder")
             
@@ -77,7 +72,6 @@ class BaseModel(Model):
             self.encoder.trainable = False
 
     def _build_decoder(self, encoder_outputs: List[tf.Tensor]) -> None:
-        """### FIXED: Build decoder with actual encoder outputs, not dummy input"""
         if not isinstance(encoder_outputs, list):
             encoder_outputs = [encoder_outputs]
             
@@ -100,18 +94,14 @@ class BaseModel(Model):
             raise ValueError(f"Unsupported activation: {self.activation_name}")
 
     def call(self, inputs: tf.Tensor, training: Optional[bool] = None) -> tf.Tensor:
-        # Get encoder features (list of tensors)
         encoder_outputs = self.encoder(inputs, training=training)
         
-        # ### FIXED: Ensure output is always list format
         if not isinstance(encoder_outputs, list):
             encoder_outputs = [encoder_outputs]
         
-        # ### FIXED: Build decoder lazily on first call with real feature maps
         if not self._decoder_built:
             self._build_decoder(encoder_outputs)
             
-        # Process through decoder and activation
         decoder_output = self.decoder(encoder_outputs, target_size=tf.shape(inputs)[1:3], training=training)
         return self.final_activation(decoder_output)
     
@@ -129,10 +119,9 @@ class BaseModel(Model):
         self._is_compiled = True
 
     def summary(self, **kwargs) -> None:
-        # ### FIXED: Build model completely before summary
         if not self.built or not self._decoder_built:
             dummy_input = tf.keras.Input(shape=self.input_shape)
-            _ = self(dummy_input)  # This triggers full building
+            _ = self(dummy_input)
         
         print(f"\n{'='*50}")
         print(f"Segmentation Model Summary")

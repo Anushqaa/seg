@@ -33,10 +33,10 @@ print("\n" + "-"*100 + "\nDataset created!\n" + "-"*100 + "\n")
 
 model = get_model(
     encoder="resnet50",
-    decoder="unet",
+    decoder="unetplusplus",
     input_shape=input_shape,
     num_classes=1,
-    encoder_freeze=False
+    encoder_freeze=True
 )
 
 print("\n" + "-"*100 + "\nModel created!\n" + "-"*100 + "\n")
