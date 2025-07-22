@@ -33,7 +33,7 @@ print("\n" + "-"*100 + "\nDataset created!\n" + "-"*100 + "\n")
 
 model = get_model(
     encoder="resnet50",
-    decoder="unetplusplus",
+    decoder="unet",
     input_shape=input_shape,
     num_classes=1,
     encoder_freeze=True
@@ -54,23 +54,14 @@ print("\n" + "-"*100 + "\nModel compiled!\n" + "-"*100 + "\n")
 print(model.summary(expand_nested=True))
 
 history = model.fit(
-    train_ds.take(1),
-    validation_data=val_ds.take(1),
-    epochs=10
+    train_ds,
+    validation_data=val_ds,
+    epochs=2
 )
+try:
+    imgs, masks = next(iter(val_ds))
+    preds = model.predict(imgs)
 
-imgs, masks = next(iter(val_ds))
-preds = model.predict(imgs)
-
-fig, axes = plt.subplots(3, 3, figsize=(9,9))
-for i in range(3):
-    axes[i,0].imshow(imgs[i])
-    axes[i,0].set_title("Image")
-    axes[i,1].imshow(masks[i, ..., 0], cmap="gray")
-    axes[i,1].set_title("GT Mask")
-    axes[i,2].imshow(preds[i, ..., 0], cmap="gray")
-    axes[i,2].set_title("Pred Mask")
-    for ax in axes[i]:
-        ax.axis("off")
-plt.tight_layout()
-plt.show()
+    print("\n" + "-"*100 + "\nPredictions made!\n" + "-"*100 + "\n")
+finally:
+    print("were here")

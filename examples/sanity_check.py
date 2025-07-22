@@ -4,7 +4,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import tensorflow as tf
 import numpy as np
 from seg.models.base import get_model
-
 def test_model(encoder_name="resnet50", decoder_name="unet", 
                input_shape=(128, 128, 3), batch_size=1):
     
@@ -27,9 +26,6 @@ def test_model(encoder_name="resnet50", decoder_name="unet",
         metrics=['accuracy']
     )
     
-    print("\nModel Summary:")
-    model.summary()
-    
     x_dummy = np.random.rand(batch_size, *input_shape).astype(np.float32)
     y_dummy = np.random.randint(0, 2, (batch_size, input_shape[0], input_shape[1], 1)).astype(np.float32)
     
@@ -48,10 +44,13 @@ def test_model(encoder_name="resnet50", decoder_name="unet",
     history = model.fit(
         x_dummy, y_dummy,
         batch_size=batch_size,
-        epochs=1,
+        epochs=2,
         validation_data=(x_dummy, y_dummy),
         verbose=1
     )
+    
+    print("\nModel Summary:")
+    model.summary()
     
     del model
     tf.keras.backend.clear_session()
@@ -67,14 +66,13 @@ def main():
         ("resnet50", "deeplabv3plus"),
     ]
     
-    # Run tests
     for encoder, decoder in test_configs:
         try:
             test_model(
                 encoder_name=encoder,
                 decoder_name=decoder,
-                input_shape=(128, 128, 3),  # Small size
-                batch_size=1  # Single sample
+                input_shape=(128, 128, 3),
+                batch_size=1  
             )
             print(f"✓ {encoder} + {decoder} passed\n")
         except Exception as e:
